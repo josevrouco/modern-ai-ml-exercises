@@ -2,8 +2,15 @@
 
 **Weight:** 3%  
 **Work mode:** Individual  
+**Due:** Thursday, September 17, 2026 at 11:59 PM ET  
 **Suggested time:** 45-60 minutes  
 **AI level:** Yellow - assistance permitted with disclosure
+
+## How this fits Week 2
+
+This problem set checks individual reasoning about framing, baselines, validation, coefficients, and regression watchouts. It uses the same Northstar Residential context as HomeValue, but it is a separate Blackboard submission and does not require completion of the HomeValue notebook.
+
+The set is launched at the end of Week 2 and is **not** preparation due before the Monday, September 14 class. Complete it after the Week 3 session and submit the eight responses by the deadline above.
 
 ## Case
 
