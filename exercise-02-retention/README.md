@@ -7,6 +7,15 @@
 **Expected effort:** 5–7 hours  
 **Work mode:** Individual
 
+## Week 4 classroom flow
+
+Week 4 builds the probability-modeling foundation in two passes:
+
+1. Inspect correlations and group churn rates, then fit Model A with tenure, Model B with tenure and monthly charges, and Model C with the full feature set. Compare all three on the same validation customers and use five-fold stratified cross-validation for Model C.
+2. Redo Model C with near-unpenalized, Ridge, and Lasso logistic regression while keeping the rows, preprocessing, and evaluation setup fixed. Record validation metrics, coefficient shrinkage, and the number of exact-zero coefficients.
+
+Stop there for Week 4. Threshold economics, sensitivity analysis, the tree-based comparison, and the final retention policy are completed after Week 5.
+
 ## Start and submit
 
 1. Open the starter notebook with the Colab button above and select **File → Save a copy in Drive**. Do not use a GitHub Gist.

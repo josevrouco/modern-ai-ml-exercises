@@ -10,6 +10,10 @@ hosts the formatted briefs only.
 
 [![Open output explorer in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/lathrahul/modern-ai-ml-exercises/blob/main/shared/explore_outputs_in_colab.ipynb)
 
+## Shared in-class tools
+
+- [Week 3 Threshold Policy Lab](shared/WEEK_03_THRESHOLD_POLICY_LAB.md) — an ungraded pair activity comparing thresholds and top-k policies under cost and review-capacity constraints.
+
 | Exercise | Course sessions | Core question | Primary method |
 |---|---:|---|---|
 | [First Flight](exercise-00-tooling-warmup/) | Session 1 | Can I complete the GitHub–Colab submission workflow? | Tooling rehearsal |
