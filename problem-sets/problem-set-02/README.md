@@ -10,7 +10,8 @@
 HarborBank uses a classifier to identify customers who may miss their next loan
 payment. A flagged customer receives a support call. Each call costs $12. An
 unflagged customer who misses a payment creates an estimated $180 loss. The
-validation set contains 1,000 customers, including 100 who miss a payment.
+validation set contains 1,000 customers, including 100 who miss a payment. The
+support team can place **at most 150 calls** during this decision period.
 
 | Threshold | Precision | Recall | Flagged customers | Missed positive cases |
 |---:|---:|---:|---:|---:|
@@ -18,12 +19,13 @@ validation set contains 1,000 customers, including 100 who miss a payment.
 | 0.50 | 0.50 | 0.70 | 140 | 30 |
 | 0.70 | 0.68 | 0.41 | 60 | 59 |
 
-Two logistic-regression models were fit on the same training data:
+Two logistic-regression models were fit using the same rows, features,
+preprocessing pipeline, and five validation folds:
 
-| Model | Training AUC | Validation AUC | Number of nonzero coefficients |
+| Model | Training AUC | Mean five-fold validation AUC | Nonzero coefficients |
 |---|---:|---:|---:|
-| Weak regularization | 0.91 | 0.74 | 84 |
-| Stronger regularization | 0.82 | 0.79 | 26 |
+| Near-unpenalized logistic regression | 0.91 | 0.74 | 84 |
+| Cross-validated Lasso logistic regression | 0.82 | 0.79 | 26 |
 
 ## Questions
 
@@ -43,18 +45,22 @@ recall? Explain in business terms, not only metric definitions.
 
 ### 4. Recommend a threshold - 0.45 points
 
-Recommend a threshold using the calculated cost and one nonfinancial
-consideration such as customer experience, staffing capacity, or fairness.
+Apply the 150-call capacity limit. Which listed threshold is feasible and has
+the lowest expected cost? State one nonfinancial consideration that could still
+change the operating decision.
 
 ### 5. Diagnose regularization - 0.40 points
 
 Which logistic-regression model currently has stronger generalization evidence?
-Use both the AUC values and coefficient counts.
+Use the train-validation gap, mean validation AUC, and coefficient counts. Why
+does this evidence support a candidate rather than prove a final winner?
 
-### 6. Evaluate accuracy - 0.25 points
+### 6. Recognize a nonlinear effect - 0.25 points
 
-If a model predicts every customer will pay, what is its accuracy? Why is that
-number inadequate for this decision?
+Suppose the observed missed-payment rate falls sharply during the first 12
+months of customer tenure and then levels off. Explain why one linear tenure
+term may underfit this pattern. Name one candidate extension discussed in class
+and one validation result you would inspect before keeping it.
 
 ### 7. Check subgroup performance - 0.30 points
 
@@ -63,8 +69,10 @@ new customers. Give one diagnostic and one possible operating response.
 
 ### 8. Final recommendation - 0.35 points
 
-In 100-150 words, recommend a model-and-threshold policy and describe one
-monitoring metric that should be reviewed after launch.
+Suppose the estimated loss from a missed positive case falls from $180 to $60.
+Recalculate expected cost for all three thresholds. In 100-150 words, recommend
+a model-and-threshold policy that accounts for capacity and this sensitivity
+result, then name one monitoring metric to review after launch.
 
 ## Submission
 

@@ -3,7 +3,7 @@
 [![Open starter in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/lathrahul/modern-ai-ml-exercises/blob/main/exercise-03-booking-guard/notebooks/getting_started.ipynb) [![Explore outputs in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/lathrahul/modern-ai-ml-exercises/blob/main/shared/explore_outputs_in_colab.ipynb)
 
 **Release:** Session 7  
-**Due:** Before Session 8 debrief  
+**Due:** See the Blackboard Due Date field. The two-week no-class period after Session 7 changes the ordinary weekly cadence, so do not infer a date from “before Session 8.”
 **Expected effort:** 5–7 hours  
 **Work mode:** Individual
 
@@ -14,6 +14,12 @@
 3. Restart the runtime, run every cell, validate `submission.csv`, and inspect it with the [shared output explorer](../shared/OUTPUT_EXPLORER.md).
 4. Download the executed notebook and required outputs to your computer.
 5. Assemble the files using the [submission guidelines](../shared/submission_guidelines.md) and submit them through the Exercise 03 assignment in Blackboard. Blackboard is the source of truth for the due date and submission field.
+
+## Week 7 classroom boundary
+
+In class, read the brief, define the prediction moment, identify likely leakage, inspect the submission contract, and write the first experiment hypothesis. The separate [Week 7 boosting lab](../shared/WEEK_07_BOOSTING_LAB.md) starts and ends in class. It does not complete any part of this take-home exercise.
+
+After class, independently run the BookingGuard notebook and complete the model benchmarks, five-run experiment record, calibration and threshold analysis, sensitivity to every supplied policy assumption, analysis across at least three operational groups, final model and threshold decision, memo, and validated submission file. The starter does not prefill a winning model, threshold, or recommendation.
 
 ## Your role
 

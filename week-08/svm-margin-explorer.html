@@ -1,0 +1,437 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SVM Margin Explorer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,600;7..72,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one working bench. Plot on the left, instrument panel on the right; stacks below 860px. */
+:root {
+  --bg: #F7F8FA; --surface: #FFFFFF; --ink: #1B2333; --muted: #5B6472; --line: #DDE2EA;
+  --accent: #2457A6; --accent-soft: #E8EFFA; --pos: #2457A6; --neg: #C17D11; --sv: #1B2333; --good: #2E7D4F; --warn: #B03A2E;
+  --plot-bg: #FFFFFF; --grid: #EEF1F5; --margin: #8A94A6;
+  --display: "Literata", Georgia, "Times New Roman", serif;
+  --body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #11151C; --surface: #181D26; --ink: #E7EAF0; --muted: #A2AAB8; --line: #2A3140;
+  --accent: #7FA6E8; --accent-soft: #1E2A40; --pos: #6F9BE6; --neg: #E0A23C; --sv: #E7EAF0; --good: #6CC08F; --warn: #E57A6E;
+  --plot-bg: #141922; --grid: #1F2632; --margin: #7C8698; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #11151C; --surface: #181D26; --ink: #E7EAF0; --muted: #A2AAB8; --line: #2A3140;
+  --accent: #7FA6E8; --accent-soft: #1E2A40; --pos: #6F9BE6; --neg: #E0A23C; --sv: #E7EAF0; --good: #6CC08F; --warn: #E57A6E;
+  --plot-bg: #141922; --grid: #1F2632; --margin: #7C8698; color-scheme: dark; }
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.5; }
+.wrap { max-width: 1160px; margin: 0 auto; padding-inline: 20px; padding-block: 28px 40px; display: grid; gap: 20px; }
+header { display: grid; gap: 6px; }
+.eyebrow { font: 600 12px/1 var(--body); letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+h1 { font: 700 clamp(26px, 3.4vw, 36px)/1.15 var(--display); margin: 0; text-wrap: balance; }
+.lede { margin: 0; color: var(--muted); max-width: 68ch; }
+.bench { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 20px; align-items: start; }
+@media (max-width: 860px) { .bench { grid-template-columns: minmax(0, 1fr); } }
+.plot { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px; display: grid; gap: 10px; min-width: 0; }
+.canvas-box { position: relative; width: 100%; max-width: 100%; aspect-ratio: 1 / 1; }
+canvas { width: 100%; height: 100%; display: block; border-radius: 6px; cursor: crosshair; touch-action: manipulation; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.ring { width: 14px; height: 14px; border-radius: 50%; border: 1.5px solid var(--sv); display: inline-block; }
+.dash { width: 18px; border-top: 2px dashed var(--margin); display: inline-block; }
+.solid { width: 18px; border-top: 2.5px solid var(--ink); display: inline-block; }
+.panel { display: grid; gap: 14px; min-width: 0; }
+.group { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px; display: grid; gap: 10px; }
+.label { font: 600 11.5px/1.2 var(--body); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.seg { display: flex; flex-wrap: wrap; gap: 6px; }
+.seg button { font: 500 13.5px/1 var(--body); color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 999px; padding: 8px 12px; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--surface); }
+.seg button:disabled { opacity: .45; cursor: not-allowed; }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.slider { display: grid; gap: 4px; }
+.slider-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.slider-top label { font-weight: 600; font-size: 14px; }
+.val { font: 500 14px var(--mono); font-variant-numeric: tabular-nums; color: var(--accent); }
+input[type=range] { width: 100%; accent-color: var(--accent); }
+.hint { font-size: 12.5px; color: var(--muted); margin: 0; }
+.toggle { display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 600; }
+.toggle input { width: 18px; height: 18px; accent-color: var(--accent); }
+.stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.stat { background: var(--bg); border-radius: 8px; padding: 10px; display: grid; gap: 2px; }
+.stat b { font: 500 20px/1.1 var(--mono); font-variant-numeric: tabular-nums; }
+.stat small { font-size: 11.5px; color: var(--muted); line-height: 1.25; }
+.status { font-size: 13px; color: var(--muted); min-height: 1.4em; margin: 0; }
+.tasks { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; display: grid; gap: 10px; }
+.tasks h2 { font: 700 20px/1.2 var(--display); margin: 0; }
+.tasks ol { margin: 0; padding-left: 20px; display: grid; gap: 8px; }
+.tasks li { max-width: 92ch; }
+.tasks li b { font-weight: 600; }
+.tasks .tag { font: 500 12px var(--mono); color: var(--accent); background: var(--accent-soft); border-radius: 4px; padding: 1px 6px; margin-left: 4px; white-space: nowrap; }
+.foot { font-size: 12.5px; color: var(--muted); margin: 0; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">AI &amp; Machine Learning for Business · Week 8</div>
+    <h1>SVM Margin Explorer</h1>
+    <p class="lede">Click the plot to add customers, then move C and gamma. The solid line is the boundary, the dashed lines are the margin edges, and ringed points are the support vectors that hold the boundary in place.</p>
+  </header>
+
+  <div class="bench">
+    <section class="plot" aria-label="Decision boundary plot">
+      <div class="canvas-box"><canvas id="cv" aria-label="Scatter plot with SVM decision regions"></canvas></div>
+      <div class="legend">
+        <span><i class="dot" style="background:var(--pos)"></i>class +1</span>
+        <span><i class="dot" style="background:var(--neg)"></i>class −1</span>
+        <span><i class="ring"></i>support vector</span>
+        <span><i class="solid"></i>boundary f(x) = 0</span>
+        <span><i class="dash"></i>margin f(x) = ±1</span>
+      </div>
+    </section>
+
+    <aside class="panel">
+      <div class="group">
+        <div class="label">Dataset</div>
+        <div class="seg" id="presets">
+          <button type="button" data-p="blobs">Separable</button>
+          <button type="button" data-p="overlap">Overlap</button>
+          <button type="button" data-p="rings">Rings</button>
+          <button type="button" data-p="moons">Moons</button>
+          <button type="button" data-p="spend">Spend vs sessions</button>
+          <button type="button" data-p="empty">Blank</button>
+        </div>
+      </div>
+
+      <div class="group">
+        <div class="label">Clicking the plot will</div>
+        <div class="seg" id="modes">
+          <button type="button" data-m="pos">Add +1</button>
+          <button type="button" data-m="neg">Add −1</button>
+          <button type="button" data-m="del">Remove point</button>
+        </div>
+        <p class="hint">Shift-click adds the other class.</p>
+      </div>
+
+      <div class="group">
+        <div class="label">Model</div>
+        <div class="seg" id="kernels">
+          <button type="button" data-k="linear">Linear kernel</button>
+          <button type="button" data-k="rbf">RBF kernel</button>
+        </div>
+        <div class="slider">
+          <div class="slider-top"><label for="cS">C · price of each violation</label><span class="val" id="cV"></span></div>
+          <input type="range" id="cS" min="-3" max="3" step="0.25" value="0">
+        </div>
+        <div class="slider">
+          <div class="slider-top"><label for="gS">γ · reach of each point</label><span class="val" id="gV"></span></div>
+          <input type="range" id="gS" min="-2" max="2" step="0.25" value="0">
+        </div>
+        <label class="toggle" id="scaleRow" hidden><input type="checkbox" id="scaleT" checked> Standardize features</label>
+        <p class="hint" id="modelHint"></p>
+      </div>
+
+      <div class="group">
+        <div class="label">Fitted model</div>
+        <div class="stats">
+          <div class="stat"><b id="sSV">–</b><small>support vectors</small></div>
+          <div class="stat"><b id="sAcc">–</b><small>training accuracy</small></div>
+          <div class="stat"><b id="sW">–</b><small id="sWl">margin width 2/‖w‖</small></div>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+      </div>
+    </aside>
+  </div>
+
+  <section class="tasks" aria-labelledby="tryh">
+    <h2 id="tryh">Five things to try</h2>
+    <ol>
+      <li><b>Which points matter?</b> On <i>Separable</i>, choose Remove point and delete a customer far from the street. Then delete a ringed one. Only the second moves the boundary. <span class="tag">Workbook Part B</span></li>
+      <li><b>What does C trade?</b> On <i>Overlap</i> with the linear kernel, slide C from 0.001 to 1000. Watch the street narrow and the support-vector count fall. <span class="tag">Task 2</span></li>
+      <li><b>Why scale?</b> On <i>Spend vs sessions</i>, untick Standardize. Distance is now measured almost entirely in dollars, and the model stops using app sessions. <span class="tag">Task 3</span></li>
+      <li><b>When is a line not enough?</b> On <i>Rings</i>, compare the linear and RBF kernels. <span class="tag">Part E</span></li>
+      <li><b>How far does each point reach?</b> On <i>Moons</i> with the RBF kernel, move γ from 0.01 to 100. Training accuracy keeps rising; ask whether the boundary would hold on new customers. <span class="tag">Task 4</span></li>
+    </ol>
+    <p class="foot">Simulated data. The solver uses sequential minimal optimization (SMO), the family of algorithm behind scikit-learn's SVC, with the same tolerance of 0.001; on test datasets it reproduces SVC's support vectors and decision values. Training accuracy is shown on purpose: it is the number that can mislead you.</p>
+  </section>
+</div>
+
+<script>
+// Platt SMO for a soft-margin SVM. f(x) = sum_j alpha_j y_j K(x_j, x) + b, labels y in {-1, +1}.
+function trainSVM(X, y, C, kern, opts) {
+  opts = opts || {};
+  const tol = opts.tol ?? 1e-3, eps = 1e-5, maxIter = opts.maxIter ?? 300000;
+  const n = X.length;
+  const K = new Array(n);
+  for (let i = 0; i < n; i++) { K[i] = new Float64Array(n); }
+  for (let i = 0; i < n; i++) for (let j = i; j < n; j++) { const v = kern(X[i], X[j]); K[i][j] = v; K[j][i] = v; }
+  const alpha = new Float64Array(n);
+  let b = 0;
+  const E = new Float64Array(n);
+  for (let i = 0; i < n; i++) E[i] = -y[i];
+  let seed = 12345;
+  const rnd = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
+
+  function takeStep(i1, i2) {
+    if (i1 === i2) return 0;
+    const a1 = alpha[i1], a2 = alpha[i2], y1 = y[i1], y2 = y[i2], E1 = E[i1], E2 = E[i2], s = y1 * y2;
+    let L, H;
+    if (y1 !== y2) { L = Math.max(0, a2 - a1); H = Math.min(C, C + a2 - a1); }
+    else { L = Math.max(0, a1 + a2 - C); H = Math.min(C, a1 + a2); }
+    if (H - L < 1e-12) return 0;
+    const k11 = K[i1][i1], k12 = K[i1][i2], k22 = K[i2][i2];
+    const eta = k11 + k22 - 2 * k12;
+    let a2n;
+    if (eta > 1e-12) {
+      a2n = a2 + y2 * (E1 - E2) / eta;
+      if (a2n < L) a2n = L; else if (a2n > H) a2n = H;
+    } else {
+      // objective at the ends of the segment
+      const f1 = y1 * (E1 - b) - a1 * k11 - s * a2 * k12;
+      const f2 = y2 * (E2 - b) - s * a1 * k12 - a2 * k22;
+      const L1 = a1 + s * (a2 - L), H1 = a1 + s * (a2 - H);
+      const Lobj = L1 * f1 + L * f2 + 0.5 * L1 * L1 * k11 + 0.5 * L * L * k22 + s * L * L1 * k12;
+      const Hobj = H1 * f1 + H * f2 + 0.5 * H1 * H1 * k11 + 0.5 * H * H * k22 + s * H * H1 * k12;
+      if (Lobj < Hobj - 1e-12) a2n = L; else if (Lobj > Hobj + 1e-12) a2n = H; else a2n = a2;
+    }
+    if (Math.abs(a2n - a2) < eps * (a2n + a2 + eps)) return 0;
+    const a1n = a1 + s * (a2 - a2n);
+    const d1 = y1 * (a1n - a1), d2 = y2 * (a2n - a2);
+    const b1 = b - E1 - d1 * k11 - d2 * k12;
+    const b2 = b - E2 - d1 * k12 - d2 * k22;
+    let bn;
+    if (a1n > 0 && a1n < C) bn = b1; else if (a2n > 0 && a2n < C) bn = b2; else bn = (b1 + b2) / 2;
+    const db = bn - b;
+    const r1 = K[i1], r2 = K[i2];
+    for (let i = 0; i < n; i++) E[i] += d1 * r1[i] + d2 * r2[i] + db;
+    alpha[i1] = a1n; alpha[i2] = a2n; b = bn;
+    return 1;
+  }
+
+  function examine(i2) {
+    const y2 = y[i2], a2 = alpha[i2], E2 = E[i2], r2 = E2 * y2;
+    if ((r2 < -tol && a2 < C) || (r2 > tol && a2 > 0)) {
+      let best = -1, gap = -1, nb = 0;
+      for (let i = 0; i < n; i++) if (alpha[i] > 0 && alpha[i] < C) { nb++; const g = Math.abs(E[i] - E2); if (g > gap) { gap = g; best = i; } }
+      if (nb > 1 && best >= 0 && takeStep(best, i2)) return 1;
+      let start = Math.floor(rnd() * n);
+      for (let k = 0; k < n; k++) { const i1 = (start + k) % n; if (alpha[i1] > 0 && alpha[i1] < C && takeStep(i1, i2)) return 1; }
+      start = Math.floor(rnd() * n);
+      for (let k = 0; k < n; k++) { const i1 = (start + k) % n; if (takeStep(i1, i2)) return 1; }
+    }
+    return 0;
+  }
+
+  let changed = 0, all = true, iter = 0;
+  while ((changed > 0 || all) && iter < maxIter) {
+    changed = 0;
+    if (all) { for (let i = 0; i < n; i++) changed += examine(i); }
+    else { for (let i = 0; i < n; i++) if (alpha[i] > 0 && alpha[i] < C) changed += examine(i); }
+    if (all) all = false; else if (changed === 0) all = true;
+    iter++;
+  }
+  const sv = [];
+  for (let i = 0; i < n; i++) if (alpha[i] > 1e-7) sv.push(i);
+  return {
+    alpha, b, sv,
+    decision: (x) => { let s = b; for (const i of sv) s += alpha[i] * y[i] * kern(X[i], x); return s; },
+  };
+}
+
+(function () {
+  "use strict";
+  const $ = (id) => document.getElementById(id);
+  const cv = $("cv"), ctx = cv.getContext("2d");
+
+  // ---------- seeded random data ----------
+  function rng(seed) { let s = seed >>> 0; return () => { s = (s + 0x6D2B79F5) >>> 0; let t = s; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+  function normal(r) { let u = 0, v = 0; while (u === 0) u = r(); while (v === 0) v = r(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
+  function gammaVar(r, k, theta) { // Marsaglia–Tsang, k >= 1
+    const d = k - 1 / 3, c = 1 / Math.sqrt(9 * d);
+    for (;;) { let x, v; do { x = normal(r); v = 1 + c * x; } while (v <= 0); v = v * v * v; const u = r();
+      if (u < 1 - 0.0331 * x ** 4 || Math.log(u) < 0.5 * x * x + d * (1 - v + Math.log(v))) return d * v * theta; }
+  }
+  const PRESETS = {
+    blobs: () => { const r = rng(7), P = []; for (let i = 0; i < 40; i++) { const c = i % 2 ? [1.6, 1.2] : [-1.6, -1.2]; P.push({ x: [c[0] + 0.85 * normal(r), c[1] + 0.85 * normal(r)], y: i % 2 ? 1 : -1 }); } return { P, box: [-4.2, 4.2, -4.2, 4.2], kernel: "linear", c: 3, g: 0, units: ["feature 1", "feature 2"] }; },
+    overlap: () => { const r = rng(3), P = []; for (let i = 0; i < 160; i++) { const c = i % 2 ? [1, 0.8] : [-1, -0.8]; P.push({ x: [c[0] + 1.15 * normal(r), c[1] + 1.15 * normal(r)], y: i % 2 ? 1 : -1 }); } return { P, box: [-4.5, 4.5, -4.5, 4.5], kernel: "linear", c: 0, g: 0, units: ["feature 1", "feature 2"] }; },
+    rings: () => { const r = rng(11), P = []; for (let i = 0; i < 200; i++) { const inner = i % 2 === 1, t = 2 * Math.PI * r(), rad = inner ? 0.45 : 1; P.push({ x: [rad * Math.cos(t) + 0.08 * normal(r), rad * Math.sin(t) + 0.08 * normal(r)], y: inner ? 1 : -1 }); } return { P, box: [-1.6, 1.6, -1.6, 1.6], kernel: "linear", c: 0, g: 0, units: ["x₁", "x₂"] }; },
+    moons: () => { const r = rng(5), P = []; for (let i = 0; i < 200; i++) { const up = i % 2 === 0, t = Math.PI * r(); const x = up ? [Math.cos(t), Math.sin(t)] : [1 - Math.cos(t), 1 - Math.sin(t) - 0.5]; P.push({ x: [x[0] + 0.3 * normal(r), x[1] + 0.3 * normal(r)], y: up ? -1 : 1 }); } return { P, box: [-2.2, 3.2, -1.9, 2.4], kernel: "rbf", c: 0, g: 0, units: ["x₁", "x₂"] }; },
+    spend: () => { const r = rng(42), P = [], n = 300, sp = [], se = [];
+      for (let i = 0; i < n; i++) { sp.push(gammaVar(r, 4, 450)); se.push(20 * r()); }
+      const m = sp.reduce((a, b) => a + b, 0) / n;
+      for (let i = 0; i < n; i++) { const z = 2.2 - 0.35 * se[i] + 0.00015 * (sp[i] - m); P.push({ x: [sp[i], se[i]], y: r() < 1 / (1 + Math.exp(-z)) ? 1 : -1 }); }
+      return { P, box: [0, 6200, -0.5, 20.5], kernel: "rbf", c: 0, g: 0, units: ["annual spend ($)", "app sessions / week"], spend: true }; },
+    empty: () => ({ P: [], box: [-3, 3, -3, 3], kernel: "linear", c: 0, g: 0, units: ["feature 1", "feature 2"] }),
+  };
+
+  // ---------- state ----------
+  const S = { preset: "blobs", P: [], box: null, kernel: "linear", logC: 0, logG: 0, standardize: true, mode: "pos", units: [], spend: false, model: null, scaler: null, gammaEff: 1 };
+
+  function loadPreset(name) {
+    const d = PRESETS[name]();
+    Object.assign(S, { preset: name, P: d.P, box: d.box, kernel: d.kernel, logC: d.c, logG: d.g, units: d.units, spend: !!d.spend, standardize: true });
+    $("cS").value = S.logC; $("gS").value = S.logG; $("scaleT").checked = true;
+    syncControls(); fit();
+  }
+
+  // ---------- fitting ----------
+  function featureScaler(P) {
+    const n = P.length; if (!n) return { f: (x) => x.slice() };
+    const mu = [0, 0], sd = [0, 0];
+    P.forEach((p) => { mu[0] += p.x[0]; mu[1] += p.x[1]; }); mu[0] /= n; mu[1] /= n;
+    P.forEach((p) => { sd[0] += (p.x[0] - mu[0]) ** 2; sd[1] += (p.x[1] - mu[1]) ** 2; });
+    sd[0] = Math.sqrt(sd[0] / n) || 1; sd[1] = Math.sqrt(sd[1] / n) || 1;
+    return { f: (x) => [(x[0] - mu[0]) / sd[0], (x[1] - mu[1]) / sd[1]] };
+  }
+  const identity = { f: (x) => x };
+
+  function fit() {
+    const P = S.P, ys = P.map((p) => p.y);
+    const hasBoth = ys.includes(1) && ys.includes(-1);
+    S.scaler = S.spend && S.standardize ? featureScaler(P) : (S.spend ? identity : identity);
+    const X = P.map((p) => S.scaler.f(p.x));
+    const C = 10 ** S.logC;
+    if (S.spend) { // mirror workbook Task 3: gamma = "scale" = 1 / (n_features * var(X))
+      const flat = X.flatMap((x) => x), m = flat.reduce((a, b) => a + b, 0) / flat.length;
+      const v = flat.reduce((a, b) => a + (b - m) ** 2, 0) / flat.length;
+      S.gammaEff = 1 / (2 * v);
+    } else S.gammaEff = 10 ** S.logG;
+    const g = S.gammaEff;
+    const kern = S.kernel === "rbf" ? (a, b) => { const d0 = a[0] - b[0], d1 = a[1] - b[1]; return Math.exp(-g * (d0 * d0 + d1 * d1)); } : (a, b) => a[0] * b[0] + a[1] * b[1];
+    if (!hasBoth) { S.model = null; updateStats(); draw(); setStatus(P.length ? "Add at least one point of each class to fit a model." : "Click the plot to add customers of both classes."); return; }
+    const t0 = performance.now();
+    const m = trainSVM(X, ys, C, kern);
+    m.kern = kern; m.X = X; m.ys = ys; m.ms = performance.now() - t0;
+    if (S.kernel === "linear") { let w0 = 0, w1 = 0; m.sv.forEach((i) => { w0 += m.alpha[i] * ys[i] * X[i][0]; w1 += m.alpha[i] * ys[i] * X[i][1]; }); m.w = [w0, w1]; }
+    S.model = m; updateStats(); draw();
+    setStatus("Fitted " + P.length + " points in " + Math.max(1, Math.round(m.ms)) + " ms.");
+  }
+
+  function decision(xRaw) { const m = S.model; return m.decision(S.scaler.f(xRaw)); }
+
+  // ---------- drawing ----------
+  let W = 600, H = 600; const PAD = { l: 52, r: 14, t: 14, b: 44 };
+  function css(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+  function resize() { const r = cv.getBoundingClientRect(), dpr = window.devicePixelRatio || 1; W = r.width; H = r.height; cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); draw(); }
+  const sx = (x) => PAD.l + (x - S.box[0]) / (S.box[1] - S.box[0]) * (W - PAD.l - PAD.r);
+  const sy = (y) => H - PAD.b - (y - S.box[2]) / (S.box[3] - S.box[2]) * (H - PAD.t - PAD.b);
+  const ix = (px) => S.box[0] + (px - PAD.l) / (W - PAD.l - PAD.r) * (S.box[1] - S.box[0]);
+  const iy = (py) => S.box[2] + (H - PAD.b - py) / (H - PAD.t - PAD.b) * (S.box[3] - S.box[2]);
+  function hexA(hex, a) { const h = hex.replace("#", ""); const n = parseInt(h.length === 3 ? h.split("").map((c) => c + c).join("") : h, 16); return `rgba(${n >> 16 & 255},${n >> 8 & 255},${n & 255},${a})`; }
+  function ticks(a, b, k) { const span = b - a, step0 = span / k, mag = 10 ** Math.floor(Math.log10(step0)); const step = [1, 2, 2.5, 5, 10].map((m) => m * mag).find((s) => s >= step0); const out = []; for (let v = Math.ceil(a / step) * step; v <= b + 1e-9; v += step) out.push(+v.toFixed(10)); return out; }
+  function fmtTick(v) { return Math.abs(v) >= 1000 ? v.toLocaleString("en-US") : (Number.isInteger(v) ? String(v) : v.toFixed(1)); }
+
+  function draw() {
+    if (!S.box || !W) return;
+    const C_ = { bg: css("--plot-bg"), grid: css("--grid"), ink: css("--ink"), muted: css("--muted"), pos: css("--pos"), neg: css("--neg"), sv: css("--sv"), margin: css("--margin") };
+    ctx.clearRect(0, 0, W, H); ctx.fillStyle = C_.bg; ctx.fillRect(0, 0, W, H);
+    const pw = W - PAD.l - PAD.r, ph = H - PAD.t - PAD.b;
+    // regions
+    if (S.model) {
+      const N = 80, cw = pw / N, ch = ph / N, F = [];
+      for (let j = 0; j <= N; j++) { F.push(new Float64Array(N + 1)); for (let i = 0; i <= N; i++) F[j][i] = decision([ix(PAD.l + i * cw), iy(PAD.t + j * ch)]); }
+      const off = document.createElement("canvas"); off.width = N; off.height = N;
+      const octx = off.getContext("2d"), img = octx.createImageData(N, N);
+      const rgb = (hex) => { const n = parseInt(hex.replace("#", ""), 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; };
+      const cp = rgb(C_.pos), cn = rgb(C_.neg), cb = rgb(C_.bg);
+      for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) {
+        const v = (F[j][i] + F[j][i + 1] + F[j + 1][i] + F[j + 1][i + 1]) / 4;
+        const a = Math.min(0.18, 0.04 + 0.09 * Math.min(Math.abs(v), 1.6)), c = v > 0 ? cp : cn, k = 4 * (j * N + i);
+        img.data[k] = cb[0] + (c[0] - cb[0]) * a; img.data[k + 1] = cb[1] + (c[1] - cb[1]) * a; img.data[k + 2] = cb[2] + (c[2] - cb[2]) * a; img.data[k + 3] = 255;
+      }
+      octx.putImageData(img, 0, 0); ctx.imageSmoothingEnabled = true; ctx.drawImage(off, PAD.l, PAD.t, pw, ph);
+      const contour = (lev, color, width, dash) => { // marching squares
+        ctx.beginPath(); ctx.strokeStyle = color; ctx.lineWidth = width; ctx.setLineDash(dash);
+        for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) {
+          const v = [F[j][i] - lev, F[j][i + 1] - lev, F[j + 1][i + 1] - lev, F[j + 1][i] - lev];
+          const x0 = PAD.l + i * cw, y0 = PAD.t + j * ch;
+          const pts = [], edge = (a, b, pa, pb) => { if ((v[a] > 0) !== (v[b] > 0)) { const t = v[a] / (v[a] - v[b]); pts.push([pa[0] + t * (pb[0] - pa[0]), pa[1] + t * (pb[1] - pa[1])]); } };
+          const c = [[x0, y0], [x0 + cw, y0], [x0 + cw, y0 + ch], [x0, y0 + ch]];
+          edge(0, 1, c[0], c[1]); edge(1, 2, c[1], c[2]); edge(2, 3, c[2], c[3]); edge(3, 0, c[3], c[0]);
+          for (let k = 0; k + 1 < pts.length; k += 2) { ctx.moveTo(pts[k][0], pts[k][1]); ctx.lineTo(pts[k + 1][0], pts[k + 1][1]); }
+        }
+        ctx.stroke(); ctx.setLineDash([]);
+      };
+      contour(-1, C_.margin, 1.4, [6, 5]); contour(1, C_.margin, 1.4, [6, 5]); contour(0, C_.ink, 2.6, []);
+    }
+    // axes
+    ctx.strokeStyle = C_.grid; ctx.lineWidth = 1; ctx.fillStyle = C_.muted; ctx.font = "12px " + css("--mono");
+    ctx.textAlign = "center"; ctx.textBaseline = "top";
+    ticks(S.box[0], S.box[1], 6).forEach((v) => { const x = sx(v); ctx.beginPath(); ctx.moveTo(x, PAD.t); ctx.lineTo(x, H - PAD.b); ctx.globalAlpha = S.model ? 0.35 : 1; ctx.stroke(); ctx.globalAlpha = 1; ctx.fillText(fmtTick(v), x, H - PAD.b + 6); });
+    ctx.textAlign = "right"; ctx.textBaseline = "middle";
+    ticks(S.box[2], S.box[3], 6).forEach((v) => { const y = sy(v); ctx.beginPath(); ctx.moveTo(PAD.l, y); ctx.lineTo(W - PAD.r, y); ctx.globalAlpha = S.model ? 0.35 : 1; ctx.stroke(); ctx.globalAlpha = 1; ctx.fillText(fmtTick(v), PAD.l - 6, y); });
+    ctx.font = "13px " + css("--body"); ctx.fillStyle = C_.muted; ctx.textAlign = "center"; ctx.textBaseline = "bottom";
+    ctx.fillText(S.units[0], PAD.l + pw / 2, H - 4);
+    ctx.save(); ctx.translate(14, PAD.t + ph / 2); ctx.rotate(-Math.PI / 2); ctx.textBaseline = "middle"; ctx.fillText(S.units[1], 0, 0); ctx.restore();
+    // points
+    const svSet = new Set(S.model ? S.model.sv : []);
+    const rad = S.P.length > 150 ? 3.6 : 5;
+    S.P.forEach((p, i) => {
+      const x = sx(p.x[0]), y = sy(p.x[1]);
+      ctx.beginPath(); ctx.arc(x, y, rad, 0, 2 * Math.PI); ctx.fillStyle = p.y > 0 ? C_.pos : C_.neg; ctx.fill();
+      if (svSet.has(i)) { ctx.beginPath(); ctx.arc(x, y, rad + 4, 0, 2 * Math.PI); ctx.strokeStyle = C_.sv; ctx.lineWidth = 1.3; ctx.stroke(); }
+    });
+  }
+
+  // ---------- UI ----------
+  function fmtNum(v) { if (v >= 100) return v.toFixed(0); if (v >= 1) return +v.toFixed(2) + ""; if (v >= 0.01) return +v.toFixed(3) + ""; return v.toExponential(1); }
+  function syncControls() {
+    document.querySelectorAll("#presets button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.p === S.preset)));
+    document.querySelectorAll("#modes button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.m === S.mode)));
+    document.querySelectorAll("#kernels button").forEach((b) => { b.setAttribute("aria-pressed", String(b.dataset.k === S.kernel)); b.disabled = S.spend && b.dataset.k === "linear"; });
+    $("cV").textContent = fmtNum(10 ** S.logC);
+    const gOn = S.kernel === "rbf" && !S.spend;
+    $("gS").disabled = !gOn;
+    $("gV").textContent = S.kernel !== "rbf" ? "not used" : (S.spend ? "scale" : fmtNum(10 ** S.logG));
+    $("scaleRow").hidden = !S.spend;
+    $("modelHint").textContent = S.spend
+      ? "This dataset mirrors workbook Task 3: RBF kernel with γ = “scale”, so only C and standardization change."
+      : (S.kernel === "linear" ? "Linear kernel: γ has no effect. Switch to RBF to bend the boundary." : "RBF kernel: similarity decays with distance at rate γ.");
+  }
+  function updateStats() {
+    const m = S.model;
+    if (!m) { $("sSV").textContent = "–"; $("sAcc").textContent = "–"; $("sW").textContent = "–"; return; }
+    $("sSV").textContent = m.sv.length + "/" + S.P.length;
+    let ok = 0; m.X.forEach((x, i) => { if ((m.decision(x) > 0 ? 1 : -1) === m.ys[i]) ok++; });
+    const base = Math.max(m.ys.filter((v) => v > 0).length, m.ys.filter((v) => v < 0).length) / m.ys.length;
+    $("sAcc").textContent = (100 * ok / m.ys.length).toFixed(1) + "%";
+    if (S.kernel === "linear" && m.w) { $("sW").textContent = (2 / Math.hypot(m.w[0], m.w[1])).toFixed(2); $("sWl").textContent = "margin width 2/‖w‖"; }
+    else { $("sW").textContent = (100 * base).toFixed(1) + "%"; $("sWl").textContent = "majority-class baseline"; }
+  }
+  function setStatus(t) { $("status").textContent = t; }
+
+  let fitTimer = 0; const refit = () => { clearTimeout(fitTimer); fitTimer = setTimeout(fit, 30); };
+  $("presets").addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) loadPreset(b.dataset.p); });
+  $("modes").addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) { S.mode = b.dataset.m; syncControls(); } });
+  $("kernels").addEventListener("click", (e) => { const b = e.target.closest("button"); if (b && !b.disabled) { S.kernel = b.dataset.k; syncControls(); refit(); } });
+  $("cS").addEventListener("input", () => { S.logC = +$("cS").value; syncControls(); refit(); });
+  $("gS").addEventListener("input", () => { S.logG = +$("gS").value; syncControls(); refit(); });
+  $("scaleT").addEventListener("change", () => { S.standardize = $("scaleT").checked; refit(); });
+  cv.addEventListener("click", (e) => {
+    const r = cv.getBoundingClientRect(), px = e.clientX - r.left, py = e.clientY - r.top;
+    if (px < PAD.l || px > W - PAD.r || py < PAD.t || py > H - PAD.b) return;
+    if (S.mode === "del") {
+      let best = -1, bd = 1e9; S.P.forEach((p, i) => { const d = Math.hypot(sx(p.x[0]) - px, sy(p.x[1]) - py); if (d < bd) { bd = d; best = i; } });
+      if (best >= 0 && bd < 18) { S.P.splice(best, 1); fit(); } else setStatus("No point close enough to remove. Click directly on a point.");
+      return;
+    }
+    let cls = S.mode === "pos" ? 1 : -1; if (e.shiftKey) cls = -cls;
+    S.P.push({ x: [ix(px), iy(py)], y: cls }); fit();
+  });
+  new ResizeObserver(resize).observe(cv);
+  window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", draw);
+  new MutationObserver(draw).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+  S.mode = "pos"; loadPreset("blobs");
+  if (document.fonts) document.fonts.ready.then(draw);
+})();
+</script>
+
+</body>
+</html>

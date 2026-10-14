@@ -1,24 +1,29 @@
 # Save or Let Go rubric — 100 points
 
-## Predictive and decision performance — 40 points
+This mirrors the **Applied Challenge Evidence & Decision Rubric** attached to the Exercise 02 Blackboard assignment. Blackboard's attached rubric controls grading.
 
-- 10: valid probability submission that improves on the prevalence baseline.
-- 15: probability quality on instructor-held outcomes, primarily log loss.
-- 15: campaign value on instructor-held outcomes relative to “contact nobody” and the reference policy.
+## Reproducible deliverables and code — 20 points
 
-## Methodology — 35 points
+- A valid `submission.csv` with the published schema and one row per test customer.
+- A fully executed notebook with visible outputs, reproducible preprocessing, and a working decision-file workflow.
+- The required memo, methodology deck (PPTX or PDF), and AI-use disclosure, packaged as specified in Blackboard.
 
-- 7: correct framing, prevalence analysis, and baseline.
-- 8: leakage-free stratified validation and pipeline design.
-- 8: principled model comparison and regularization.
-- 7: threshold optimization using supplied economics.
-- 5: sensitivity, calibration, and segment-level error analysis.
+## Validation and evidence — 35 points
 
-## Business communication — 25 points
+- Correct framing, prevalence analysis, and an always-stay baseline.
+- Leakage-free stratified validation and a fair comparison of logistic, nonlinear, shallow-tree, and Random Forest candidates.
+- Appropriate probability evidence, including ROC-AUC, PR-AUC, log loss, calibration or segment diagnostics, and a confusion matrix at the selected threshold.
+- Threshold selection and a controlled robustness or sensitivity check. Instructor-held outcomes also inform the assessment of probability quality and policy evidence.
 
-- 8: clear recommended policy with operational scale.
-- 7: defensible economics with assumptions stated.
-- 6: customer-experience, fairness, and limitation discussion.
-- 4: concise memo, effective presentation, and complete AI disclosure.
+## Business impact, fairness, and risk — 30 points
 
-Accuracy alone is insufficient. A submission that never contacts anyone may be accurate but creates no retention value.
+- A defensible contact policy and its expected value relative to contacting nobody and the reference policy, using the supplied economics.
+- Operational scale, assumptions, and a lower-margin sensitivity scenario.
+- Customer-experience and fairness considerations, limitations, and the risks of deploying the recommendation.
+
+## Communication and AI disclosure — 15 points
+
+- A concise one-page retention memo and effective methodology deck that explain the evidence and decision.
+- Complete, specific AI-use disclosure in the notebook.
+
+Accuracy alone is insufficient. A policy that never contacts anyone may be accurate but creates no retention value.

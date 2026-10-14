@@ -13,6 +13,7 @@ hosts the formatted briefs only.
 ## Shared in-class tools
 
 - [Week 3 Threshold Policy Lab](shared/WEEK_03_THRESHOLD_POLICY_LAB.md) — an ungraded pair activity comparing thresholds and top-k policies under cost and review-capacity constraints.
+- [Week 5 Machine Failure Triage](shared/notebooks/week_05_machine_failure_regularization_lab.ipynb) — an ungraded guided practice comparing near-unpenalized, Ridge, and Lasso logistic regression before applying an inspection-capacity constraint.
 
 | Exercise | Course sessions | Core question | Primary method |
 |---|---:|---|---|
